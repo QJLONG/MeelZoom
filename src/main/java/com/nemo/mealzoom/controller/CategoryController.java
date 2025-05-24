@@ -40,9 +40,28 @@ public class CategoryController {
         // 创建条件过滤器
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
         // 设置升序排序
-        queryWrapper.orderByDesc(Category::getSort);
+        queryWrapper.orderByAsc(Category::getSort);
         categoryService.page(pageInfo, queryWrapper);
         return R.success(pageInfo);
     }
 
+    /**
+     * 删除分类：自定义删除分类方法
+     * @param ids
+     * @return
+     */
+    @DeleteMapping
+    public R<String> delete(Long ids) {
+        Long id = ids;
+        log.info("删除分类，id为：{}", id);
+        categoryService.remove(id);
+        return R.success("删除分类成功!");
+    }
+
+    @PutMapping
+    public R<String> update(@RequestBody Category category) {
+        log.info("修改分类信息：{}", category);
+        categoryService.updateById(category);
+        return R.success("修改分类成功");
+    }
 }

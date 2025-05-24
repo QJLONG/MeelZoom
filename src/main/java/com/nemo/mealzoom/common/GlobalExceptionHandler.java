@@ -14,7 +14,7 @@ import java.sql.SQLIntegrityConstraintViolationException;
 @Slf4j
 public class GlobalExceptionHandler {
     /**
-     *
+     * SQL 插入重复键异常
      * @param ex
      * @return
      */
@@ -27,5 +27,16 @@ public class GlobalExceptionHandler {
             return R.error(msg);
         }
         return R.error("未知的数据库错误");
+    }
+
+    /**
+     * 捕获自定义异常 CustomException
+     * @param ex
+     * @return
+     */
+    @ExceptionHandler(CustomException.class)
+    R<String> exceptionHandler(CustomException ex) {
+        log.error(ex.getMessage());
+        return R.error(ex.getMessage());
     }
 }
