@@ -35,7 +35,8 @@ public class LoginCheckFilter implements Filter {
                 "/employee/logout",
                 "/backend/**",
                 "/front/**",
-        };
+                "/common/upload"
+       };
         // 判断本次请求是否需要处理 (检查登录状态)
         Boolean check = check(urls, requestURI);
         // 如果不需要处理，则直接放行

@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.EnableTransactionManagement;
 @Slf4j
 @ServletComponentScan
 @SpringBootApplication
+@EnableTransactionManagement
 public class MealzoomApplication {
     public static void main(String[] args) {
         SpringApplication.run(MealzoomApplication.class, args);
