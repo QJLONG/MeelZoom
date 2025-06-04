@@ -82,4 +82,41 @@ public class DishController {
         return R.success(dishDtoPageInfo);
     }
 
+    /**
+     * 修改页面获取菜品信息，填充到页面中
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public R<DishDto> getById(@PathVariable Long id) {
+        DishDto dishDto = dishService.getByIdWithFlavor(id);
+        return R.success(dishDto);
+    }
+
+    /**
+     * 修改信息页面中的保存功能
+     * @param dishDto 前端传递过来的dishDto
+     * @return 返回描述信息
+     */
+    @PutMapping
+    public R<String> update(@RequestBody DishDto dishDto) {
+        dishService.updateWithFlavor(dishDto);
+        return R.success("保存成功！");
+    }
+
+    @GetMapping("list")
+    public R<List<Dish>> list(Dish dish) {
+        // 条件过滤器
+        LambdaQueryWrapper<Dish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        // 根据Id查询Dish
+        dishLambdaQueryWrapper.eq(dish.getCategoryId() != null, Dish::getCategoryId, dish.getCategoryId());
+        // 过滤掉停售的菜品
+        dishLambdaQueryWrapper.eq(Dish::getStatus, 1);
+        // 排序
+        dishLambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
+        List<Dish> list = dishService.list(dishLambdaQueryWrapper);
+
+        return R.success(list);
+    }
+
 }

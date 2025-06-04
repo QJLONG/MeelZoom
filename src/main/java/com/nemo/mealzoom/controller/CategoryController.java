@@ -63,6 +63,11 @@ public class CategoryController {
         return R.success("删除分类成功!");
     }
 
+    /**
+     * 修改分类
+     * @param category
+     * @return
+     */
     @PutMapping
     public R<String> update(@RequestBody Category category) {
         log.info("修改分类信息：{}", category);
