@@ -27,7 +27,7 @@ public class LoginCheckFilter implements Filter {
         // 获取本次请求的URI
         String requestURI = request.getRequestURI();
 
-        log.info("拦截: {}", requestURI);;
+        log.info("[检测]: {}", requestURI);
 
         // 定义不需要拦截的路径
         String[] urls = new String[] {
@@ -35,13 +35,15 @@ public class LoginCheckFilter implements Filter {
                 "/employee/logout",
                 "/backend/**",
                 "/front/**",
-                "/common/upload"
+                "/common/upload",
+                "/user/sendMsg",
+                "/user/login"
        };
         // 判断本次请求是否需要处理 (检查登录状态)
         Boolean check = check(urls, requestURI);
         // 如果不需要处理，则直接放行
         if (check) {
-            log.info("本次请求 {} 不需要处理", requestURI);
+            log.info("[放行]本次请求 {} 不需要处理", requestURI);
             filterChain.doFilter(request, response);
             return;}
         // 判断登录状态，如果已登录，则直接放行
@@ -53,7 +55,15 @@ public class LoginCheckFilter implements Filter {
             filterChain.doFilter(request, response);
             return;
         }
-        log.info("用户未登录");
+        if (request.getSession().getAttribute("user") != null) {
+            log.info("[登录]用户已登录, 用户id: {}", request.getSession().getAttribute("user"));
+            // 将当前用户Id 保存到 ThreadLocal中
+            Long userId = (Long) request.getSession().getAttribute("user");
+            BaseContext.setCurrentId(userId);
+            filterChain.doFilter(request, response);
+            return;
+        }
+        log.info("[拦截]用户未登录");
         // 如果未登录则返回未登录结果, 通过输出流，向客户端页面相应数据
         response.getWriter().write(JSON.toJSONString(R.error("NOTLOGIN")));
         return;

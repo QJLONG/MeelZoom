@@ -7,8 +7,10 @@ import com.nemo.mealzoom.common.R;
 import com.nemo.mealzoom.dto.DishDto;
 import com.nemo.mealzoom.entity.Category;
 import com.nemo.mealzoom.entity.Dish;
+import com.nemo.mealzoom.entity.DishFlavor;
 import com.nemo.mealzoom.entity.SetmealDish;
 import com.nemo.mealzoom.service.CategoryService;
+import com.nemo.mealzoom.service.DishFlavorService;
 import com.nemo.mealzoom.service.DishService;
 import com.nemo.mealzoom.service.SetmealDishService;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +20,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/dish")
@@ -31,6 +34,9 @@ public class DishController {
 
     @Autowired
     private SetmealDishService setmealDishService;
+
+    @Autowired
+    private DishFlavorService dishFlavorService;
     /**
      * 新增菜品
      * @param dishDto
@@ -109,8 +115,28 @@ public class DishController {
         return R.success("保存成功！");
     }
 
+    // @GetMapping("list")
+    // public R<List<Dish>> list(Dish dish) {
+    //     // 条件过滤器
+    //     LambdaQueryWrapper<Dish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+    //     // 根据Id查询Dish
+    //     dishLambdaQueryWrapper.eq(dish.getCategoryId() != null, Dish::getCategoryId, dish.getCategoryId());
+    //     // 过滤掉停售的菜品
+    //     dishLambdaQueryWrapper.eq(Dish::getStatus, 1);
+    //     // 排序
+    //     dishLambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
+    //     List<Dish> list = dishService.list(dishLambdaQueryWrapper);
+    //
+    //     return R.success(list);
+    // }
+
+    /**
+     * 前端展示菜品信息时，需要向前端传递菜品的口味信息，因此返回DishDto对象
+     * @param dish [CategoryId, Status]
+     * @return DishDto
+     */
     @GetMapping("list")
-    public R<List<Dish>> list(Dish dish) {
+    public R<List<DishDto>> list(Dish dish) {
         // 条件过滤器
         LambdaQueryWrapper<Dish> dishLambdaQueryWrapper = new LambdaQueryWrapper<>();
         // 根据Id查询Dish
@@ -121,8 +147,20 @@ public class DishController {
         dishLambdaQueryWrapper.orderByAsc(Dish::getSort).orderByDesc(Dish::getUpdateTime);
         List<Dish> list = dishService.list(dishLambdaQueryWrapper);
 
-        return R.success(list);
+        // 为每个Dish对象添加口味信息，生成DishDto对象
+        List<DishDto> dishDtoList = list.stream().map(item -> {
+            DishDto dishDto = new DishDto();
+            BeanUtils.copyProperties(item, dishDto);
+            LambdaQueryWrapper<DishFlavor> dishFlavorLambdaQueryWrapper = new LambdaQueryWrapper<>();
+            dishFlavorLambdaQueryWrapper.eq(DishFlavor::getDishId, item.getId());
+            List<DishFlavor> flavorList = dishFlavorService.list(dishFlavorLambdaQueryWrapper);
+            dishDto.setFlavors(flavorList);
+            return dishDto;
+        }).collect(Collectors.toList());
+
+        return R.success(dishDtoList);
     }
+
 
     /**
      * 停售菜品, 停售前检查是否存在关联的正在起售的套餐

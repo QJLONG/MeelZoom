@@ -34,6 +34,7 @@ public class SetmealController {
 
     /**
      * 新增套餐
+     *
      * @param setmealDto
      * @return
      */
@@ -45,6 +46,7 @@ public class SetmealController {
 
     /**
      * 分页查询套餐信息，需要对查询到的记录重新构造（添加套餐分类）
+     *
      * @param page
      * @param pageSize
      * @param name
@@ -84,6 +86,7 @@ public class SetmealController {
 
     /**
      * 删除套餐
+     *
      * @param ids
      * @return
      */
@@ -96,6 +99,7 @@ public class SetmealController {
 
     /**
      * 填充修改信息
+     *
      * @param id
      * @return
      */
@@ -108,6 +112,7 @@ public class SetmealController {
 
     /**
      * 保存修改信息
+     *
      * @param setmealDto
      * @return
      */
@@ -119,11 +124,12 @@ public class SetmealController {
 
     /**
      * 套餐停售
+     *
      * @param ids
      * @return
      */
     @PostMapping("/status/0")
-    public R<String> disable (@RequestParam  List<Long> ids) {
+    public R<String> disable(@RequestParam List<Long> ids) {
         List<Setmeal> setmeals = setmealService.listByIds(ids);
         setmeals.forEach(setmeal -> setmeal.setStatus(0));
         setmealService.updateBatchById(setmeals);
@@ -132,11 +138,12 @@ public class SetmealController {
 
     /**
      * 套餐起售
+     *
      * @param ids
      * @return
      */
     @PostMapping("/status/1")
-    public R<String> enable (@RequestParam  List<Long> ids) {
+    public R<String> enable(@RequestParam List<Long> ids) {
         // 起售前检查每个套餐中的菜品是否为起售状态
         LambdaQueryWrapper<SetmealDish> setmealDishLambdaQueryWrapper = new LambdaQueryWrapper<>();
         setmealDishLambdaQueryWrapper.in(SetmealDish::getSetmealId, ids)
@@ -152,4 +159,38 @@ public class SetmealController {
         return R.success("启售成功！");
     }
 
+    /**
+     * 根据分类信息获取套餐列表
+     *
+     * @param setmeal [CategoryId, Status]
+     * @return 套餐列表
+     */
+    @GetMapping("list")
+    public R<List<Setmeal>> list(Setmeal setmeal) {
+        // log.info(setmeal.toString());
+        LambdaQueryWrapper<Setmeal> setmealLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        // 根据分类id查询套餐
+        setmealLambdaQueryWrapper.eq(Setmeal::getCategoryId, setmeal.getCategoryId());
+        // 根据过滤掉Status=0的
+        setmealLambdaQueryWrapper.eq(Setmeal::getStatus, setmeal.getStatus());
+        List<Setmeal> list = setmealService.list(setmealLambdaQueryWrapper);
+
+        return R.success(list);
+    }
+
+    /**
+     * 展示套餐详细信息
+     * @param setmealId
+     * @return
+     */
+    @GetMapping("/dish/{setmealId}")
+    public R<SetmealDto> dish(@PathVariable Long setmealId) {
+        // log.info("categoryId: {}", categoryId);
+        SetmealDto setmealDto = setmealService.getByIdWithDish(setmealId);
+        LambdaQueryWrapper<SetmealDish> setmealDishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        setmealDishLambdaQueryWrapper.eq(SetmealDish::getSetmealId, setmealId);
+        setmealDishLambdaQueryWrapper.orderByDesc(SetmealDish::getUpdateTime);
+        List<SetmealDish> setmealDishList = setmealDishService.list(setmealDishLambdaQueryWrapper);
+        return R.success(setmealDto);
+    }
 }

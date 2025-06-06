@@ -84,6 +84,10 @@ public class CategoryController {
      */
     @GetMapping("/list")
     public R<List<Category>> list(Category category) {
+        // 如果没有参数，则返回所有类别信息
+        if (category.getType() == null) {
+            return R.success(categoryService.list());
+        }
 
         // 条件过滤器
         LambdaQueryWrapper<Category> queryWrapper = new LambdaQueryWrapper<>();
