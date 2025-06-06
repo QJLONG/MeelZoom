@@ -2,9 +2,12 @@ package com.nemo.mealzoom.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nemo.mealzoom.common.CustomException;
 import com.nemo.mealzoom.common.R;
 import com.nemo.mealzoom.dto.SetmealDto;
+import com.nemo.mealzoom.entity.Dish;
 import com.nemo.mealzoom.entity.Setmeal;
+import com.nemo.mealzoom.entity.SetmealDish;
 import com.nemo.mealzoom.service.CategoryService;
 import com.nemo.mealzoom.service.SetmealDishService;
 import com.nemo.mealzoom.service.SetmealService;
@@ -90,4 +93,63 @@ public class SetmealController {
         setmealService.removeWithDish(ids);
         return R.success("删除成功!");
     }
+
+    /**
+     * 填充修改信息
+     * @param id
+     * @return
+     */
+    @GetMapping("/{id}")
+    public R<SetmealDto> getById(@PathVariable Long id) {
+        log.info("id:{}", id);
+        SetmealDto setmealDto = setmealService.getByIdWithDish(id);
+        return R.success(setmealDto);
+    }
+
+    /**
+     * 保存修改信息
+     * @param setmealDto
+     * @return
+     */
+    @PutMapping
+    public R<String> update(@RequestBody SetmealDto setmealDto) {
+        setmealService.updateWithDish(setmealDto);
+        return R.success("保存成功！");
+    }
+
+    /**
+     * 套餐停售
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/0")
+    public R<String> disable (@RequestParam  List<Long> ids) {
+        List<Setmeal> setmeals = setmealService.listByIds(ids);
+        setmeals.forEach(setmeal -> setmeal.setStatus(0));
+        setmealService.updateBatchById(setmeals);
+        return R.success("停售成功！");
+    }
+
+    /**
+     * 套餐起售
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/1")
+    public R<String> enable (@RequestParam  List<Long> ids) {
+        // 起售前检查每个套餐中的菜品是否为起售状态
+        LambdaQueryWrapper<SetmealDish> setmealDishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        setmealDishLambdaQueryWrapper.in(SetmealDish::getSetmealId, ids)
+                .inSql(SetmealDish::getDishId, "SELECT id FROM dish WHERE status=0");
+        int count = setmealDishService.count(setmealDishLambdaQueryWrapper);
+        if (count > 0) {
+            throw new CustomException("套餐中存在停售的菜品！");
+        }
+
+        List<Setmeal> setmeals = setmealService.listByIds(ids);
+        setmeals.forEach(setmeal -> setmeal.setStatus(1));
+        setmealService.updateBatchById(setmeals);
+        return R.success("启售成功！");
+    }
+
 }

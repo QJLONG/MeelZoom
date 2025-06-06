@@ -2,12 +2,15 @@ package com.nemo.mealzoom.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nemo.mealzoom.common.CustomException;
 import com.nemo.mealzoom.common.R;
 import com.nemo.mealzoom.dto.DishDto;
 import com.nemo.mealzoom.entity.Category;
 import com.nemo.mealzoom.entity.Dish;
+import com.nemo.mealzoom.entity.SetmealDish;
 import com.nemo.mealzoom.service.CategoryService;
 import com.nemo.mealzoom.service.DishService;
+import com.nemo.mealzoom.service.SetmealDishService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -26,6 +29,8 @@ public class DishController {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private SetmealDishService setmealDishService;
     /**
      * 新增菜品
      * @param dishDto
@@ -117,6 +122,41 @@ public class DishController {
         List<Dish> list = dishService.list(dishLambdaQueryWrapper);
 
         return R.success(list);
+    }
+
+    /**
+     * 停售菜品, 停售前检查是否存在关联的正在起售的套餐
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/0")
+    public R<String> disable(@RequestParam List<Long> ids) {
+        // 检查是否存在关联且正在起售的套餐
+        LambdaQueryWrapper<SetmealDish> setmealDishLambdaQueryWrapper = new LambdaQueryWrapper<>();
+        setmealDishLambdaQueryWrapper.in(SetmealDish::getDishId, ids)
+                .inSql(SetmealDish::getSetmealId, "SELECT id FROM setmeal WHERE status = 0");
+        int count = setmealDishService.count(setmealDishLambdaQueryWrapper);
+        if (count > 0) {
+            throw new CustomException("关联了正在起售的套餐");
+        }
+        List<Dish> dishes = dishService.listByIds(ids);
+        dishes.forEach(dish -> dish.setStatus(0));
+        dishService.updateBatchById(dishes);
+        return R.success("停售成功！");
+    }
+
+
+    /**
+     * 启售菜品
+     * @param ids
+     * @return
+     */
+    @PostMapping("/status/1")
+    public R<String> enable(@RequestParam List<Long> ids) {
+        List<Dish> dishes = dishService.listByIds(ids);
+        dishes.forEach(dish -> dish.setStatus(1));
+        dishService.updateBatchById(dishes);
+        return R.success("启售成功！");
     }
 
 }
