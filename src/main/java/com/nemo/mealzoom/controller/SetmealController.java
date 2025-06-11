@@ -14,10 +14,15 @@ import com.nemo.mealzoom.service.SetmealService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.stream.Collectors;
+
+import static com.nemo.mealzoom.utils.RedisConstants.SETMEAL_KEY;
 
 @Slf4j
 @RestController
@@ -32,6 +37,9 @@ public class SetmealController {
     @Autowired
     private CategoryService categoryService;
 
+    @Autowired
+    private CacheManager cacheManager;
+
     /**
      * 新增套餐
      *
@@ -39,6 +47,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping
+    @CacheEvict(value = "setmeal", allEntries = true)
     public R<String> save(@RequestBody SetmealDto setmealDto) {
         setmealService.saveWithDish(setmealDto);
         return R.success("保存成功!");
@@ -91,6 +100,7 @@ public class SetmealController {
      * @return
      */
     @DeleteMapping
+    @CacheEvict(value = "setmeal", allEntries = true)
     public R<String> remove(@RequestParam List<Long> ids) {
         // log.info("ids: {}", ids);
         setmealService.removeWithDish(ids);
@@ -117,6 +127,7 @@ public class SetmealController {
      * @return
      */
     @PutMapping
+    @CacheEvict(value = "setmeal", allEntries = true)
     public R<String> update(@RequestBody SetmealDto setmealDto) {
         setmealService.updateWithDish(setmealDto);
         return R.success("保存成功！");
@@ -129,6 +140,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/0")
+    @CacheEvict(value = "setmeal", allEntries = true) //删除全部setmeal缓存
     public R<String> disable(@RequestParam List<Long> ids) {
         List<Setmeal> setmeals = setmealService.listByIds(ids);
         setmeals.forEach(setmeal -> setmeal.setStatus(0));
@@ -143,6 +155,7 @@ public class SetmealController {
      * @return
      */
     @PostMapping("/status/1")
+    @CacheEvict(value = "setmeal", allEntries = true) //删除全部setmeal缓存
     public R<String> enable(@RequestParam List<Long> ids) {
         // 起售前检查每个套餐中的菜品是否为起售状态
         LambdaQueryWrapper<SetmealDish> setmealDishLambdaQueryWrapper = new LambdaQueryWrapper<>();
@@ -166,6 +179,7 @@ public class SetmealController {
      * @return 套餐列表
      */
     @GetMapping("list")
+    @Cacheable(value ="setmeal", key = "#setmeal.categoryId")
     public R<List<Setmeal>> list(Setmeal setmeal) {
         // log.info(setmeal.toString());
         LambdaQueryWrapper<Setmeal> setmealLambdaQueryWrapper = new LambdaQueryWrapper<>();

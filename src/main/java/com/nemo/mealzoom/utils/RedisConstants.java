@@ -5,4 +5,5 @@ public class RedisConstants {
     public static final Long LOGIN_CODE_TTL = 5L;
     public static final String DISH_KEY = "dish:";
     public static final Long DISH_TTL = 60L;
+    public static final String SETMEAL_KEY = "setmeal:";
 }
