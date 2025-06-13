@@ -10,7 +10,7 @@ spring:
       username: hummer
       password: 747759
   redis:
-    host: 10.10.10.138
+    host: 10.10.10.139
     password: 747759
     port: 6379
     database: 1
